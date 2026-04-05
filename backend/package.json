@@ -1,0 +1,9 @@
+{
+  "name": "lemon-dashboard-api",
+  "version": "1.0.0",
+  "description": "Backend for Lemon Media sales dashboard widget",
+  "main": "handler.js",
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}

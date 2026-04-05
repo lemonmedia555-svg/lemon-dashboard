@@ -1,0 +1,64 @@
+openapi: 3.0.0
+info:
+  title: Lemon Dashboard API Gateway
+  version: 1.0.0
+
+paths:
+  /api/dashboard:
+    get:
+      summary: Get dashboard metrics
+      operationId: getDashboard
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [day, week, month]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: manager_id
+          in: query
+          schema:
+            type: integer
+        - name: pipeline_id
+          in: query
+          schema:
+            type: integer
+      x-yc-apigateway-integration:
+        type: cloud_functions
+        function_id: ${FUNCTION_ID}
+        service_account_id: ${SERVICE_ACCOUNT_ID}
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                type: object
+    options:
+      summary: CORS preflight
+      operationId: corsDashboard
+      x-yc-apigateway-integration:
+        type: dummy
+        content:
+          text/plain: ""
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: '*'
+          Access-Control-Allow-Methods: GET, OPTIONS
+          Access-Control-Allow-Headers: Content-Type
+
+x-yc-apigateway:
+  cors:
+    origin: '*'
+    methods: GET, OPTIONS
+    allowedHeaders: Content-Type
