@@ -173,7 +173,7 @@ async function fetchLeadsForRange(range, managerId, pipelineId) {
         params['filter[responsible_user_id]'] = managerId;
     }
     if (pipelineId) {
-        params['filter[pipe]'] = pipelineId;
+        params['filter[pipeline_id][]'] = pipelineId;
     }
 
     return fetchAllLeads(params);
