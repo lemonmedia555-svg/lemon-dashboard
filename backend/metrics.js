@@ -115,20 +115,19 @@ function computeMetrics(leads, pipelineStatuses, sourceFieldId) {
         }
         const src = bySourceMap[sourceKey];
 
+        // Лиды = все созданные за период (как "+N новые" в AmoCRM)
+        totals.leads++;
+        src.leads++;
+
         // Успешно реализовано = id 142, Закрыто/проиграно = id 143
         const isSuccess = lead.status_id === 142;
         const isClosed = lead.status_id === 143;
-
-        // Не считаем закрытые/проигранные сделки (AmoCRM тоже их исключает из "+N новые")
-        if (isClosed) continue;
-
         const leadStatus = statusesSorted.find(s => s.id === lead.status_id);
         const leadSort = leadStatus ? leadStatus.sort : 0;
         const price = lead.price || 0;
 
-        // Lead count (только активные и успешные сделки)
-        totals.leads++;
-        src.leads++;
+        // Закрытые/проигранные не участвуют в воронке (квалы, КП, счета)
+        if (isClosed) continue;
 
         // Quals: текущий этап >= "Квалификация" (или успешно)
         if (qualStatusSort !== null && (leadSort >= qualStatusSort || isSuccess)) {
@@ -200,11 +199,12 @@ function computeMetricsWithoutStatuses(leads, sourceFieldId) {
         }
         const src = bySourceMap[sourceKey];
 
-        // Не считаем закрытые/проигранные сделки
-        if (lead.status_id === 143) continue;
-
+        // Лиды = все созданные за период
         totals.leads++;
         src.leads++;
+
+        // Закрытые не участвуют в воронке
+        if (lead.status_id === 143) continue;
 
         if (lead.status_id === 142) {
             totals.payments++;
