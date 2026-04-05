@@ -734,6 +734,7 @@
 
         // Pipeline mapping
         if (data.pipelines && data.pipelines.length > 0) {
+            var hadPipeline = !!getPipelineId();
             // Пытаемся определить primary/repeat по названию
             data.pipelines.forEach(function(p) {
                 var name = (p.name || '').toLowerCase();
@@ -749,6 +750,11 @@
             }
             if (!pipelineMap.repeat && data.pipelines[1]) {
                 pipelineMap.repeat = data.pipelines[1].id;
+            }
+            // Если pipeline_id появился после первой загрузки — перезапрашиваем с фильтром
+            if (!hadPipeline && getPipelineId()) {
+                loadData();
+                return;
             }
         }
 
