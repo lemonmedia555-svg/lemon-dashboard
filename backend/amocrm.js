@@ -17,27 +17,41 @@ let refreshToken = process.env.AMO_REFRESH_TOKEN;
 
 const BASE_URL = `https://${AMO_DOMAIN}`;
 
+// Защита от параллельных рефрешей токена
+let refreshPromise = null;
+
 async function refreshAccessToken() {
-    const res = await fetch(`${BASE_URL}/oauth2/access_token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            client_id: AMO_CLIENT_ID,
-            client_secret: AMO_CLIENT_SECRET,
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken,
-            redirect_uri: `https://${AMO_DOMAIN}`,
-        }),
-    });
+    // Если уже идёт рефреш — ждём его результат
+    if (refreshPromise) return refreshPromise;
 
-    if (!res.ok) {
-        throw new Error(`Failed to refresh token: ${res.status} ${await res.text()}`);
+    refreshPromise = (async () => {
+        const res = await fetch(`${BASE_URL}/oauth2/access_token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                client_id: AMO_CLIENT_ID,
+                client_secret: AMO_CLIENT_SECRET,
+                grant_type: 'refresh_token',
+                refresh_token: refreshToken,
+                redirect_uri: `https://${AMO_DOMAIN}`,
+            }),
+        });
+
+        if (!res.ok) {
+            throw new Error(`Failed to refresh token: ${res.status} ${await res.text()}`);
+        }
+
+        const data = await res.json();
+        accessToken = data.access_token;
+        refreshToken = data.refresh_token;
+        return accessToken;
+    })();
+
+    try {
+        return await refreshPromise;
+    } finally {
+        refreshPromise = null;
     }
-
-    const data = await res.json();
-    accessToken = data.access_token;
-    refreshToken = data.refresh_token;
-    return accessToken;
 }
 
 function sleep(ms) {

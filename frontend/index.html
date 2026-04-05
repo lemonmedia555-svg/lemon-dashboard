@@ -457,7 +457,10 @@
     // ══════════════════════════════════════
     // CONFIG
     // ══════════════════════════════════════
-    const API_URL = 'https://d5dsvbbgtuamsj9kmbta.laqt4bj7.apigw.yandexcloud.net/api/dashboard';
+    // API URL — подставляется при деплое через deploy.sh
+    // Для локальной разработки можно задать через ?api_url=...
+    var API_URL = new URLSearchParams(window.location.search).get('api_url')
+        || 'https://d5dsvbbgtuamsj9kmbta.laqt4bj7.apigw.yandexcloud.net/api/dashboard';
 
     const SOURCE_NAMES = {
         yandex: 'Яндекс', vk: 'ВК', inst: 'Инст', organic: 'Органика',
@@ -599,9 +602,19 @@
         });
     });
 
-    // Date inputs
-    dateFrom.addEventListener('change', function() { if (currentPeriod === 'custom' && dateFrom.value && dateTo.value) loadData(); });
-    dateTo.addEventListener('change', function() { if (currentPeriod === 'custom' && dateFrom.value && dateTo.value) loadData(); });
+    // Date inputs — с валидацией date_from <= date_to
+    dateFrom.addEventListener('change', function() {
+        if (currentPeriod === 'custom' && dateFrom.value && dateTo.value) {
+            if (dateFrom.value > dateTo.value) { dateTo.value = dateFrom.value; }
+            loadData();
+        }
+    });
+    dateTo.addEventListener('change', function() {
+        if (currentPeriod === 'custom' && dateFrom.value && dateTo.value) {
+            if (dateTo.value < dateFrom.value) { dateFrom.value = dateTo.value; }
+            loadData();
+        }
+    });
 
     // Manager select
     managerSelect.addEventListener('change', function() { loadData(); });

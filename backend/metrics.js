@@ -60,6 +60,10 @@ function getSourceKey(sourceName) {
 }
 
 function computeMetrics(leads, pipelineStatuses, sourceFieldId) {
+    if (!pipelineStatuses || pipelineStatuses.length === 0) {
+        // Нет статусов — считаем только лиды и оплаты (по id 142)
+        return computeMetricsWithoutStatuses(leads, sourceFieldId);
+    }
     const statusesSorted = [...pipelineStatuses].sort((a, b) => a.sort - b.sort);
 
     // В AmoCRM: type=1 — "Неразобранное", type=0 — все остальные (включая обычные этапы!)
@@ -82,7 +86,7 @@ function computeMetrics(leads, pipelineStatuses, sourceFieldId) {
     const workStatuses = statusesSorted.filter(s => s.type !== 1 && s.id !== 142 && s.id !== 143);
     if (!qualStatusSort && workStatuses.length >= 3) qualStatusSort = workStatuses[2].sort;
     if (!kpStatusSort && workStatuses.length >= 4) kpStatusSort = workStatuses[3].sort;
-    if (!invoiceStatusSort && workStatuses.length >= 5) invoiceStatusSort = workStatuses[5] ? workStatuses[5].sort : null;
+    if (!invoiceStatusSort && workStatuses.length >= 6) invoiceStatusSort = workStatuses[5].sort;
 
     const totals = {
         leads: 0,
@@ -177,6 +181,36 @@ function computeDiff(current, previous) {
         payments_sum: current.payments_sum,
         payments_sum_diff: current.payments_sum - previous.payments_sum,
     };
+}
+
+function computeMetricsWithoutStatuses(leads, sourceFieldId) {
+    const totals = { leads: 0, quals: 0, kp: 0, invoices: 0, invoices_sum: 0, payments: 0, payments_sum: 0 };
+    const bySourceMap = {};
+
+    for (const lead of leads) {
+        const sourceName = getSourceFromLead(lead, sourceFieldId);
+        const sourceKey = getSourceKey(sourceName);
+
+        if (!bySourceMap[sourceKey]) {
+            bySourceMap[sourceKey] = {
+                source: sourceName, source_key: sourceKey,
+                leads: 0, quals: 0, kp: 0, invoices: 0, invoices_sum: 0, payments: 0, payments_sum: 0,
+            };
+        }
+        const src = bySourceMap[sourceKey];
+        totals.leads++;
+        src.leads++;
+
+        if (lead.status_id === 142) {
+            totals.payments++;
+            src.payments++;
+            const price = lead.price || 0;
+            totals.payments_sum += price;
+            src.payments_sum += price;
+        }
+    }
+
+    return { totals, by_source: Object.values(bySourceMap).sort((a, b) => b.leads - a.leads) };
 }
 
 module.exports = { computeMetrics, computeDiff, getSourceKey };

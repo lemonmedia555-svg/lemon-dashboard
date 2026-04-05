@@ -77,9 +77,10 @@ API_URL="https://$GW_DOMAIN/api/dashboard"
 echo "API URL: $API_URL"
 
 echo "=== 5. Деплой Frontend ==="
-# Подставляем URL API в index.html
+# Подставляем URL API в index.html (экранируем спецсимволы в URL)
 FRONTEND_FILE="$PROJECT_DIR/frontend/index.html"
-sed -i.bak "s|const API_URL = '.*'|const API_URL = '$API_URL'|" "$FRONTEND_FILE"
+ESCAPED_API_URL=$(printf '%s\n' "$API_URL" | sed 's/[&/\]/\\&/g')
+sed -i.bak "s|'https://[^']*api/dashboard'|'${ESCAPED_API_URL}'|" "$FRONTEND_FILE"
 rm -f "${FRONTEND_FILE}.bak"
 
 yc storage s3api put-object \

@@ -35,7 +35,16 @@ const MSK_OFFSET = 3 * 60 * 60 * 1000;
 function getMskToday() {
     const now = new Date();
     const mskNow = new Date(now.getTime() + MSK_OFFSET);
+    // Полночь по MSK = начало дня в UTC+3
     return new Date(Date.UTC(mskNow.getUTCFullYear(), mskNow.getUTCMonth(), mskNow.getUTCDate()) - MSK_OFFSET);
+}
+
+// Валидация обязательных переменных окружения
+const REQUIRED_ENV = ['AMO_DOMAIN', 'AMO_CLIENT_ID', 'AMO_CLIENT_SECRET', 'AMO_ACCESS_TOKEN', 'AMO_REFRESH_TOKEN'];
+for (const key of REQUIRED_ENV) {
+    if (!process.env[key]) {
+        console.error(`Missing required environment variable: ${key}`);
+    }
 }
 
 function getDateRange(period, dateFrom, dateTo) {
@@ -43,8 +52,14 @@ function getDateRange(period, dateFrom, dateTo) {
 
     if (dateFrom && dateTo) {
         // Пользовательские даты интерпретируем как MSK
-        const from = new Date(new Date(dateFrom + 'T00:00:00+03:00'));
-        const to = new Date(new Date(dateTo + 'T23:59:59.999+03:00'));
+        const from = new Date(dateFrom + 'T00:00:00+03:00');
+        const to = new Date(dateTo + 'T23:59:59.999+03:00');
+        if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+            throw new Error('Invalid date format');
+        }
+        if (from > to) {
+            throw new Error('date_from must be before date_to');
+        }
         return { from, to };
     }
 
@@ -259,6 +274,14 @@ module.exports.handler = async function (event) {
 
     } catch (err) {
         console.error('Handler error:', err);
+
+        if (err.message === 'Invalid date format' || err.message === 'date_from must be before date_to') {
+            return {
+                statusCode: 400,
+                headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+                body: JSON.stringify({ error: err.message }),
+            };
+        }
 
         if (err.statusCode === 429) {
             return {
